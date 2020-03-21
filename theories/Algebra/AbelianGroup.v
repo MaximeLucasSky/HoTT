@@ -3,6 +3,8 @@ Require Import Truncations.
 Require Import HIT.Coeq.
 Require Import Algebra.Group.
 Require Import Algebra.Subgroup.
+Require Import Colimits.Quotient.
+Require Import Algebra.QuotientGroup.
 Require Import Cubical.
 Require Import WildCat.
 
@@ -396,3 +398,53 @@ Proof.
   - exact _.
   - symmetry; apply homotopic_isabelianization.
 Defined.
+
+
+(** Subgroups of abelian groups *)
+
+Global Instance isnormal_ab_subgroup (G : AbGroup) (H : Subgroup G)
+  : IsNormalSubgroup H.
+Proof.
+  srapply Build_IsNormalSubgroup.
+  intros x y.
+  unfold in_cosetL, in_cosetR.
+  refine (equiv_functor_sigma' (Build_Equiv _ _ group_inverse _) _).
+  intros h.
+  simpl.
+  srapply equiv_iff_hprop.
+  + intros p.
+    rewrite grp_homo_inv.
+    rewrite p.
+    rewrite negate_sg_op.
+    rewrite (involutive x).
+    apply commutativity.
+  + intros p.
+    rewrite grp_homo_inv in p.
+    apply moveL_equiv_V in p.
+    rewrite p; cbn.
+    change (- (x * -y) = - x * y).
+    rewrite negate_sg_op.
+    rewrite (involutive y).
+    apply commutativity.
+Defined.
+
+
+(** Quotients of abelian groups *)
+
+Global Instance isabgroup_quotient (G : AbGroup) (H : Subgroup G)
+  : IsAbGroup (QuotientGroup G H).
+Proof.
+  nrapply Build_IsAbGroup.
+  1: exact _.
+  intro x.
+  srapply Quotient_ind_hprop.
+  intro y; revert x.
+  srapply Quotient_ind_hprop.
+  intro x.
+  apply (ap (tr o coeq)).
+  apply commutativity.
+Defined.
+
+Definition QuotientAbGroup (G : AbGroup) (H : Subgroup G)
+  : AbGroup := Build_AbGroup (QuotientGroup G H) _ _ _ _.
+

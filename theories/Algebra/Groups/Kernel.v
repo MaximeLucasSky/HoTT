@@ -71,5 +71,18 @@ Defined.
 Definition Kernel {A B : Group} (f : A $-> B)
   : Subgroup A := Build_Subgroup A (grp_kernel f) _.
 
-Global Instance isnormal_abkernel {A : AbGroup} {B : Group} (f : (A : Group) $-> B)
-  : IsNormalSubgroup (Kernel f) := _.
+Locate IsNormalSubgroup.
+
+Global Instance isnormal_kernel {A B : Group} (f : A $-> B)
+  : IsNormalSubgroup (Kernel f).
+Proof.
+  apply isnormalsubgroup_of_cong_mem.
+  intros g n.
+  srefine ((_ ; _ ); _).
+  3: reflexivity.
+  simpl.
+  rewrite grp_homo_op, grp_homo_op, grp_homo_inv.
+  rewrite (pr2 n), (right_identity (- f g)).
+  rewrite (negate_l _).
+  reflexivity.
+Defined.

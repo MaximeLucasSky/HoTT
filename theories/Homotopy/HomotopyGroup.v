@@ -107,7 +107,7 @@ Proof.
   destruct n.
   + exact (ptr_functor 0).
   + intro f.
-    srapply Build_GroupHomomorphism.
+    snrapply Build_GroupHomomorphism.
     { apply Trunc_functor.
       apply iterated_loops_functor.
       assumption. }
@@ -179,7 +179,7 @@ Definition groupiso_pi_functor (n : nat)
   {X Y : pType} (e : X <~>* Y)
   : GroupIsomorphism (Pi n.+1 X) (Pi n.+1 Y).
 Proof.
-  srapply Build_GroupIsomorphism.
+  snrapply Build_GroupIsomorphism.
   1: apply (pi_functor n.+1 e).
   nrefine (Trunc_functor_isequiv _ _).
   refine (isequiv_homotopic _ (pequiv_iterated_loops_functor_is_iterated_loops_functor n.+1 e)).

@@ -11,6 +11,7 @@ Section SinkFields.
   Definition sink_map := f.2.2.
 End SinkFields.
 
+(** TODO: make this easier to comprehend *)
 (** A coverage is a family deciding which sinks are coverings and equipped with a proof that coverings have a closure property. *)
 Record Coverage (C : Type) `{Is1Cat C} := {
   (** We have a type family deciding if a sink is a cover *)

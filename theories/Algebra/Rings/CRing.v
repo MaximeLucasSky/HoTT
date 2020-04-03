@@ -1,7 +1,9 @@
 Require Import Basics Types WildCat.
+Require Import Spaces.Finite.
 Require Export Classes.interfaces.abstract_algebra.
 Require Import Algebra.AbGroups.
 Require Export Classes.theory.rings.
+Require Import Constant.
 
 (** Theory of commutative rings *)
 
@@ -35,6 +37,7 @@ Arguments cring_zero {_}.
 Arguments cring_one {_}.
 Arguments cring_negate {_}.
 Arguments cring_isring {_}.
+Opaque cring_isring.
 
 Definition issig_CRing : _ <~> CRing := ltac:(issig).
 
@@ -67,6 +70,10 @@ Proof.
   refine (equiv_path_sigma_hprop _ _ oE _).
   apply equiv_path_forall.
 Defined.
+
+Global Instance ishset_cringhomomorphism `{Funext} {A B : CRing}
+  : IsHSet (CRingHomomorphism A B)
+  := fun f g => trunc_equiv' _ equiv_path_cringhomomorphism (n:=-1).
 
 Definition rng_homo_id (A : CRing) : CRingHomomorphism A A
   := Build_CRingHomomorphism idmap _.
@@ -244,3 +251,48 @@ Proof.
     exact (isequiv_adjointify f g p q).
 Defined.
 
+(** Operations on rings *)
+
+(** TODO: move *)
+Fixpoint rng_pow {R : CRing} (n : nat) : R -> R
+  := fun r =>
+    match n with
+    | 0%nat => 1
+    | n.+1%nat => r * rng_pow n r
+    end.
+
+Lemma rng_pow_mult {R : CRing} (n m : nat) (a : R)
+  : rng_pow (Peano.plus n m) a = rng_pow n a * rng_pow m a.
+Proof.
+  induction n.
+  { symmetry.
+    apply left_identity. }
+  simpl.
+  rewrite IHn.
+  apply associativity.
+Qed.
+
+(** Given a family of elements indexed by fin we can take their sum *)
+Definition rng_indexed_sum_fin {R : CRing} {n} (a : Fin n -> R) : R.
+Proof.
+  induction n.
+  1: exact 0.
+  exact (a (inr tt) + IHn (a o inl)).
+Defined.
+
+(** More generally, given a family of elements indexed by a finite type we can take their sum *)
+Definition rng_indexed_sum `{Funext} {R : CRing} {X : Type} {F : Finite X}
+  (a : X -> R) : R.
+Proof.
+  destruct F as [n me].
+  revert me.
+  srapply merely_rec_hset.
+  { intro e.
+    exact (rng_indexed_sum_fin (a o e^-1)). }
+  unfold WeaklyConstant.
+  intros e1 e2.
+  induction n.
+  1: reflexivity.
+  simpl.
+  (** No clue how to finish this *)  
+Admitted.

@@ -348,6 +348,14 @@ theories/Algebra/Groups/Image.v
 theories/Algebra/Groups/Kernel.v
 
 #
+#   Geometry
+#
+
+theories/Geometry/Site.v
+theories/Geometry/Presheaf.v
+theories/Geometry/Sheaf.v
+
+#
 #   Tactics
 #
 

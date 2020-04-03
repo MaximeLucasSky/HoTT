@@ -98,6 +98,8 @@ Section RingLaws.
   Definition rng_dist_l : x * (y + z) = x * y + x * z := simple_distribute_l _ _ _.
   Definition rng_dist_r : (x + y) * z = x * z + y * z := simple_distribute_r _ _ _.
 
+  Definition rng_plus_negate : - (x + y) = -x + -y := negate_plus_distr _ _.
+
   Definition rng_mult_one_l : 1 * x = x := left_identity _.
   Definition rng_mult_one_r : x * 1 = x := right_identity _.
   Definition rng_mult_zero_l : 0 * x = 0 := left_absorb _.

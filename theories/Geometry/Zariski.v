@@ -29,8 +29,6 @@ Definition ZariskiCoverage `{Funext} : Coverage CRing^op.
 Proof.
   snrapply Build_Coverage.
   1: intros SpecR f; exact (IsZariskiCover f).
-  (** Now we have to give the existence of a covering family that is compatible with a morphism. The definition of coverage we used is pretty general, but in this case we will just take the pullback. *)
-(*   intros R f [fin_f [r [s [b p]]]]. *)
   hnf; intros U f iszar_g.
   intros V g.
   snrefine (_;_).
@@ -38,6 +36,7 @@ Proof.
     1: exact (sink_index f).
     1: exact _.
     { intro i.
+      
       
 Admitted.
 

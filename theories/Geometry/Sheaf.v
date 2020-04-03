@@ -20,13 +20,15 @@ Section Sieve.
     (** We define the sieve as a coequalizer of the following presheaves *)
     snrapply PreSheafCoeq.
     { snrapply PreSheafCoproduct.
-      1: exact (BuildhSet (sink_index f * sink_index f)).
+      1: exact (sink_index f * sink_index f).
+      1: exact _.
       intros [i j].
       nrapply PreSheafPullback.
       1: exact (fmap hset_yon (sink_map f i)).
       exact (fmap hset_yon (sink_map f j)). }
     { snrapply PreSheafCoproduct.
       1: exact (sink_index f).
+      1: exact _.
       intros i.
       exact (hset_yon (sink_domain f i)). }
     (** Here we define the two maps between them *)

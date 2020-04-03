@@ -150,7 +150,8 @@ Section PSh.
   Proof.
   Admitted.
 
-  Definition PreSheafCoproduct {I : hSet} (X : I -> PSh CC) : PSh CC.
+  Definition PreSheafCoproduct {I : Type} `{IsHSet I}
+    (X : I -> PSh CC) : PSh CC.
   Proof.
     snrapply Build_Fun11.
     { intro Y.
@@ -177,8 +178,8 @@ Section PSh.
     exact (fmap_comp (X i) _ _ x).
   Defined.
 
-  Definition PreSheafCoproduct_rec {I : hSet} (X : I -> PSh CC) (P : PSh CC)
-    (f : forall i, X i $-> P)
+  Definition PreSheafCoproduct_rec {I : Type} `{IsHSet I}
+    (X : I -> PSh CC) (P : PSh CC) (f : forall i, X i $-> P)
     : PreSheafCoproduct X $-> P.
   Proof.
     snrapply Build_NatTrans.

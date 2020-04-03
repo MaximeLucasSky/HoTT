@@ -1,15 +1,18 @@
 Require Import Basics Types WildCat.
 
-Definition Sink {A : Type} `{IsGraph A} (U : A)
-  := exists (I : hSet) (V : I -> A), forall i, V i $-> U.
 
-(** Here are some convenient names for sinks *)
-Section SinkFields.
-  Context {A : Type} `{IsGraph A} {U : A} (f : Sink U).
-  Definition sink_index := f.1.
-  Definition sink_domain := f.2.1.
-  Definition sink_map := f.2.2.
-End SinkFields.
+Record Sink {A : Type} `{IsGraph A} (U : A) := {
+  sink_index : Type;
+  ishset_sink_index : IsHSet sink_index;
+  sink_domain : sink_index -> A;
+  sink_map : forall i, sink_domain i $-> U;
+}.
+
+Coercion sink_map : Sink >-> Funclass.
+Arguments sink_index {A _ U}.
+Arguments sink_domain {A _ U}.
+Arguments sink_map {A _ U}.
+Global Existing Instance ishset_sink_index.
 
 (** TODO: make this easier to comprehend *)
 (** A coverage is a family deciding which sinks are coverings and equipped with a proof that coverings have a closure property. *)

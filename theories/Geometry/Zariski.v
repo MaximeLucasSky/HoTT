@@ -5,32 +5,43 @@ Require Import Spaces.Finite.
 
 Local Open Scope mc_scope.
 
+Section AssumeFunext.
+Context `{Funext}.
+
+(** For a cover to be a Zariski cover, we require the following: *)
+Record IsZariskiCover {SpecR : CRing^op} (f : Sink SpecR) := {
+  (** The indexing set is finite *)
+  iszar_finite : Finite (sink_index f);
+  (** A family of elements of SpecR which we will later localize at *)
+  iszar_a : sink_index f -> SpecR;
+  (** Each map of the cover is a localization at a_i *)
+  iszar_islocal (i : sink_index f)
+    : IsLocalization _ (mss_single_element _ (iszar_a i)) _ (sink_map f i);
+  (** Another family of elements of SpecR *)
+  iszar_b : sink_index f -> SpecR;
+  (** Such that their "inner product" is 1 *)
+  (** TODO: better name *)
+  iszar_eq : rng_indexed_sum
+    (fun i => cring_mult (iszar_a i) (iszar_b i)) = cring_one;
+}.
+
 Definition ZariskiCoverage `{Funext} : Coverage CRing^op.
 Proof.
   snrapply Build_Coverage.
-  (** We define what it means for a family of morphisms (a sink) to be a Zariski covering. *)
-  { (** Given a ring R and a family of morphisms from (since op) this ring *)
-    intros R f.
-    (** We require the indexing set of the family to be explicitly finite in order to define ring operations with it. *)
-    refine (exists (e : exists n, sink_index f <~> Fin n), _).
-    (** This family is a Zariski coverage if there exists a family [a] of elements in [R] *)
-    refine (exists (a : sink_index f -> R), _).
-    (** And two conditions hold *)
-    refine (prod _ _).
-    (** Firstly each map in the family is a ring localization at the specified element [a] *)
-    1: exact (forall i, IsLocalization R (mss_single_element R (a i)) _ (sink_map f i)).
-    (** And secondly there exists a family elements [b] in [R] *)
-    refine (exists (b : Fin e.1 -> R), _).
-    unfold op in R.
-    (** Such the sum of their products is 1 *)
-    exact (rng_indexed_sum (fun x => a (e.2^-1 x) * b x) = 1). }
-  
-  intros R f [[n e] [a c]].
+  1: intros SpecR f; exact (IsZariskiCover f).
+  (** Now we have to give the existence of a covering family that is compatible with a morphism. The definition of coverage we used is pretty general, but in this case we will just take the pullback. *)
+(*   intros R f [fin_f [r [s [b p]]]]. *)
+  hnf; intros U f iszar_g.
   intros V g.
+  snrefine (_;_).
+  { snrapply Build_Sink.
+    1: exact (sink_index f).
+    1: exact _.
+    { intro i.
+      
 Admitted.
 
-Section AssumeFunext.
-Context `{Funext}.
+
 
 Definition ZariskiSite : Site.
 Proof.

@@ -91,29 +91,44 @@ Defined.
 
 Section RingLaws.
 
-  (** Many of these ring laws have already been prove. But we give them names here so that they are easy to find and use. *)
+  (** Many of these ring laws have already been proven. But we give them names here so that they are easy to find and use. *)
 
   Context {A B : CRing} (f : CRingHomomorphism A B) (x y z : A).
 
+  (** Distributivity *)
   Definition rng_dist_l : x * (y + z) = x * y + x * z := simple_distribute_l _ _ _.
   Definition rng_dist_r : (x + y) * z = x * z + y * z := simple_distribute_r _ _ _.
 
-  Definition rng_plus_negate : - (x + y) = -x + -y := negate_plus_distr _ _.
+  (** Associativity *)
+  Definition rng_plus_assoc : x + (y + z) = x + y + z := simple_associativity _ _ _.
+  Definition rng_mult_assoc : x * (y * z) = x * y * z := simple_associativity _ _ _.
 
+  (** Commutativity *)
+  Definition rng_plus_comm : x + y = y + x := commutativity _ _.
+  Definition rng_mult_comm : x * y = y * x := commutativity _ _.
+
+  (** Negation and plus *)
+  Definition rng_negate_plus : - (x + y) = -x + -y := negate_plus_distr _ _.
+
+  (** Multiplicative identities *)
   Definition rng_mult_one_l : 1 * x = x := left_identity _.
   Definition rng_mult_one_r : x * 1 = x := right_identity _.
+
+  (** Multiplication and zero *)
   Definition rng_mult_zero_l : 0 * x = 0 := left_absorb _.
   Definition rng_mult_zero_r : x * 0 = 0 := right_absorb _.
+
+  (** Multiplication and negation *)
   Definition rng_mult_negate_negate : -x * -y = x * y := negate_mult_negate _ _.
   Definition rng_mult_negate_l : -x * y = -(x * y) := inverse (negate_mult_distr_l _ _).
   Definition rng_mult_negate_r : x * -y = -(x * y) := inverse (negate_mult_distr_r _ _).
 
+  (** Ring homomorphism laws *)
   Definition rng_homo_plus : f (x + y) = f x + f y := preserves_plus x y.
   Definition rng_homo_mult : f (x * y) = f x * f y := preserves_mult x y.
   Definition rng_homo_zero : f 0 = 0 := preserves_0.
   Definition rng_homo_one  : f 1 = 1 := preserves_1.
   Definition rng_homo_negate : f (-x) = -(f x) := preserves_negate x.
-
   Definition rng_homo_minus_one : f (-1) = -1
     := preserves_negate 1%mc @ ap negate preserves_1.
 

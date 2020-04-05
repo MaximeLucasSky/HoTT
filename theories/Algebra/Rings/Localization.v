@@ -29,9 +29,15 @@ Arguments mss_incl {R _}.
 Global Existing Instances
   mss_ishset mss_mult mss_unit mss_incl_inj mss_incl_ismonoidpreserving.
 
-Definition mss_incl_mult {R : CRing} {S : MultiplicativeSubset R} (x y : S)
-  : mss_incl (x * y) = mss_incl x * mss_incl y
-  := preserves_sg_op x y.
+Section MultSubsetLaws.
+  Context {R : CRing} {S : MultiplicativeSubset R} (x y : S).
+
+  Definition mss_incl_mult : @mss_incl R S (x * y) = mss_incl x * mss_incl y
+    := preserves_sg_op x y.
+
+  Definition mss_incl_one : @mss_incl R S 1 = 1
+    := monmor_unitmor.
+End MultSubsetLaws.
 
 (** Common multiplicative subsets *)
 
@@ -76,6 +82,8 @@ Class IsUnit (R : CRing) (r : R) := {
   isunit_left_inverse   : isunit_inverse * r = 1;
   isunit_right_inverse  : r * isunit_inverse = 1;
 }.
+
+Arguments isunit_inverse {_ _} _.
 
 (** Classically a localization (at S) is a map R -> R_S which maps elements of S to units in R_S, such that given any other map R -> T which maps S to units, there exists a unique map R_S -> T such that the appropriate triangle commutes.
 
@@ -133,7 +141,7 @@ Section Localization.
     set (C := mss_incl (s * (b * d)) * e * mss_incl d).
     set (D := mss_incl (s * (b * d) * f) * c).
     rewrite (commutativity C D).
-    rewrite rng_plus_negate.
+    rewrite rng_negate_plus.
     rewrite simple_associativity.
     rewrite <- (simple_associativity A).
     assert (r : B - D = 0).
@@ -255,7 +263,7 @@ Section Localization.
     apply qglue.
     exists s.
     rewrite ? rng_mult_negate_r.
-    rewrite <- rng_plus_negate.
+    rewrite <- rng_negate_plus.
     rewrite ? rng_mult_negate_r.
     rewrite p.
     apply negate_0.
@@ -359,12 +367,200 @@ Section Localization.
     all: exact _.
   Defined.
 
+  (** This is the universal map [R $-> rng_localization R S] *)
+  Definition rng_localization_map : CRingHomomorphism R rng_localization.
+  Proof.
+    snrapply Build_CRingHomomorphism.
+    1: exact (fun x => class_of _ (x, 1)).
+    (** There should be 4 cases but 2 can be solved by reflexivity *)
+    repeat split.
+    { intros x y.
+      apply qglue.
+      exists 1.
+      rewrite ? mss_incl_mult.
+      rewrite ? mss_incl_one.
+      rewrite ? rng_mult_one_l, ? rng_mult_one_r.
+      apply plus_negate_r. }
+    intros x y.
+    apply qglue.
+    exists 1.
+    rewrite ? mss_incl_mult.
+    rewrite ? mss_incl_one.
+    rewrite ? rng_mult_one_l.
+    apply plus_negate_r.
+  Defined.
+
+  Section LocRec.
+
+    Context (T : CRing) (f : CRingHomomorphism R T)
+      (u : forall s : S, IsUnit T (f (mss_incl s))).
+
+    Lemma rng_localization_rec'_well_defined
+      : forall x y : R * S, eq_fraction x y
+        -> f (fst x) * isunit_inverse (u (snd x))
+         = f (fst y) * isunit_inverse (u (snd y)).
+    Proof.
+      intros [r1 s1] [r2 s2] [x p].
+      apply (ap f) in p.
+      rewrite rng_homo_zero in p.
+      rewrite rng_homo_mult in p.
+      rewrite rng_homo_plus in p.
+      apply (ap (mult (isunit_inverse (u x)))) in p.
+      rewrite simple_associativity in p.
+      rewrite isunit_left_inverse in p.
+      rewrite rng_mult_one_l in p.
+      rewrite rng_mult_zero_r in p.
+      rewrite rng_homo_negate in p.
+      rewrite <- rng_mult_one_r; symmetry.
+      rewrite <- (@isunit_right_inverse _ _ (u s1)).
+      rewrite simple_associativity.
+      f_ap.
+      rewrite <- simple_associativity.
+      rewrite (rng_mult_comm _ (f _)).
+      rewrite <- rng_mult_one_r; symmetry.
+      rewrite <- (@isunit_right_inverse _ _ (u s2)).
+      rewrite ? simple_associativity.
+      f_ap.
+      apply equal_by_zero_sum.
+      rewrite <- ?rng_homo_mult.
+      rewrite ? (rng_mult_comm _ (mss_incl _)).
+      apply p.
+    Qed.
+
+    (** We wish to show that this is a ring homomorphism. *)
+    Definition rng_localization_rec' : rng_localization -> T.
+    Proof.
+      snrapply Quotient_rec.
+      1: exact _.
+      { intros [r s].
+        exact (f r * isunit_inverse (u s)). }
+      apply rng_localization_rec'_well_defined.
+    Defined.
+
+    Instance issemigrouppreserving_plus_rng_localization_rec'
+      : @IsSemiGroupPreserving _ _ plus plus rng_localization_rec'.
+    Proof.
+      intros x.
+      snrapply Quotient_ind_hprop; [exact _ | intros [r1 s1]; revert x].
+      snrapply Quotient_ind_hprop; [exact _ | intros [r2 s2]].
+      simpl.
+      assert (p : isunit_inverse (u (s2 * s1))
+        = isunit_inverse (u s2) * isunit_inverse (u s1)).
+      { rewrite <- rng_mult_one_r.
+        rewrite <- (@isunit_right_inverse _ _ (u (s2 * s1))).
+        refine ((rng_mult_one_l _)^ @ _).
+        rewrite simple_associativity.
+        f_ap.
+        rewrite mss_incl_mult.
+        rewrite rng_homo_mult.
+        rewrite (rng_mult_comm (f _)).
+        rewrite <- simple_associativity.
+        rewrite (simple_associativity _ (f _)).
+        rewrite isunit_left_inverse.
+        rewrite rng_mult_one_l.
+        rewrite isunit_left_inverse.
+        reflexivity. }
+      rewrite p.
+      rewrite rng_homo_plus.
+      rewrite ?rng_homo_mult.
+      rewrite rng_dist_r.
+      rewrite (rng_mult_comm (isunit_inverse _)).
+      rewrite rng_mult_assoc.
+      rewrite <- (rng_mult_assoc (f r2)).
+      rewrite isunit_right_inverse.
+      rewrite rng_mult_one_r.
+      rewrite (rng_mult_comm (isunit_inverse _)).
+      rewrite (rng_mult_comm (f _) (f _)).
+      rewrite rng_mult_assoc.
+      rewrite <- (rng_mult_assoc (f r1)).
+      rewrite isunit_right_inverse.
+      rewrite rng_mult_one_r.
+      reflexivity.
+    Qed.
+
+    Instance issemigrouppreserving_mult_rng_localization_rec'
+      : @IsSemiGroupPreserving _ _ mult mult rng_localization_rec'.
+    Proof.
+    Admitted.
+
+    Instance isunitpreserving_zero_rng_localization_rec'
+      : @IsUnitPreserving _ _ zero zero rng_localization_rec'.
+    Proof.
+    Admitted.
+
+    Instance isunitpreserving_one_rng_localization_rec'
+      : @IsUnitPreserving _ _ one one rng_localization_rec'.
+    Proof.
+    Admitted.
+
+    Definition rng_localization_rec : CRingHomomorphism rng_localization T.
+    Proof.
+      snrapply Build_CRingHomomorphism.
+      1: rapply rng_localization_rec'.
+      repeat split; exact _.
+    Defined.
+
+  End LocRec.
+
 End Localization.
 
+(** Now we will show that this construction of localization is in fact a ring localization. *)
 
-
-
-
+Global Instance islocalization_rng_localization `{Funext}
+  {R : CRing} {S : MultiplicativeSubset R}
+  : IsLocalization R S _ (rng_localization_map R S).
+Proof.
+  split.
+  { intro s.
+    snrapply Build_IsUnit.
+    1: exact (class_of _ (1, s)).
+    1,2: apply qglue.
+    1,2: exists 1.
+    1,2: rewrite ? mss_incl_mult, ? mss_incl_one.
+    1,2: rewrite ? rng_mult_one_l, ? rng_mult_one_r.
+    1,2: apply plus_negate_r. }
+  intros T f p.
+  snrapply Build_Contr.
+  { exists (rng_localization_rec R S T f p).
+    intro. simpl.
+    refine ((rng_mult_one_r _)^ @ ap _ _).
+    refine (_ @ rng_mult_one_r _).
+    refine (_ @ ap _ (rng_homo_one f)).
+    refine (_^ @ ap _ (ap _ mss_incl_one)).
+    apply isunit_left_inverse. }
+  intros [g q].
+  rapply path_sigma_hprop.
+  rapply equiv_path_cringhomomorphism.
+  rapply Quotient_ind_hprop.
+  intros [r s].
+  simpl.
+  transitivity (g ((rng_localization_map R S r) * class_of _ (1, s))).
+  { rewrite rng_homo_mult.
+    simpl.
+    rewrite <- q.
+    f_ap.
+    rewrite <- rng_mult_one_r.
+    rewrite <- (@isunit_right_inverse _ _ (p s)).
+    refine ((rng_mult_one_l _)^ @ _).
+    rewrite rng_mult_assoc.
+    f_ap.
+    rewrite q.
+    rewrite <- rng_homo_mult.
+    symmetry.
+    refine (_ @ rng_homo_one g).
+    f_ap.
+    apply qglue.
+    exists 1.
+    rewrite ?mss_incl_mult, ?mss_incl_one.
+    rewrite ?rng_mult_one_l, ?rng_mult_one_r.
+    apply plus_negate_r. }
+  apply ap.
+  apply qglue.
+  exists 1.
+  rewrite ?mss_incl_mult, ?mss_incl_one.
+  rewrite ?rng_mult_one_l, ?rng_mult_one_r.
+  apply plus_negate_r.
+Qed.
 
 
 

@@ -1,86 +1,37 @@
 Require Import Basics Types WildCat.
 Require Import Geometry.Site.
 Require Import Geometry.Presheaf.
-Require Import Limits.Pullback.
 
-(** In this file we define shaves on a site *)
+(** In this file we define sheaves on a site. We follow Johnstones definition from "Sketches of an elephant", C2.1. *)
 
-(** Firstly, we have to define the sieve of a cover *)
-Section Sieve.
+(** First we package up the notion of a compatible family. This will be useful when we define what it means for a presheaf to be a sheaf wrt. a certain topology. *)
+Record CompatibleFamily
+  {C : Site}   (** Let C be a site *)
+  (A : PSh C)  (** Let A be a presheaf on C *)
+  {U : C}      (** Let U be an object of C *)
+   (** And let f be a covering of U *)
+  (f : Sink U) `{!IsCover f} :=
+{ (** We call a family of elements of [A U] a compatible family if *)
+  cf_fam (i : sink_index f) : A (sink_domain f i);
+  (** For all f and g from V so that they commute with the cover *)
+  cf_comp (V : C) (i j : sink_index f)
+    (g : V $-> sink_domain f i) (h : V $-> sink_domain f j)
+    (p : f i $o g $== f j $o h)
+    (** [A] agrees on the corresonding elements *)
+    : fmap A (g : Hom (A:=C^op) _ V) (cf_fam i)
+    = fmap A (h : Hom (A:=C^op) _ V) (cf_fam j);
+}.
 
-  Context
-    {C : Site}    (** Let C be a site *)
-    {U : C}       (** Let U be an object of C *)
-    (f : Sink U)  (** And let f be a covering of U *)
-    `{IsCover C U f}.
+Coercion cf_fam : CompatibleFamily >-> Funclass.
 
-  (** The sieve associated to a cover *)
-  Definition presheaf_sieve : PSh C.
-  Proof.
-    (** We define the sieve as a coequalizer of the following presheaves *)
-    snrapply PreSheafCoeq.
-    { snrapply PreSheafCoproduct.
-      1: exact (sink_index f * sink_index f).
-      1: exact _.
-      intros [i j].
-      nrapply PreSheafPullback.
-      1: exact (fmap hset_yon (sink_map f i)).
-      exact (fmap hset_yon (sink_map f j)). }
-    { snrapply PreSheafCoproduct.
-      1: exact (sink_index f).
-      1: exact _.
-      intros i.
-      exact (hset_yon (sink_domain f i)). }
-    (** Here we define the two maps between them *)
-    { snrapply functor_presheafcoproduct.
-      1: exact fst.
-      intros [i j].
-      snrapply Build_NatTrans.
-      { intro X.
-        exact pr1. }
-      snrapply Build_Is1Natural.
-      intros X Y g.
-      reflexivity. }
-    snrapply functor_presheafcoproduct.
-    1: exact snd.
-    intros [i j].
-    snrapply Build_NatTrans.
-    { intro x.
-      exact pullback_pr2. }
-    snrapply Build_Is1Natural.
-    intros X Y g.
-    reflexivity.
-  Defined.
+(** A presheaf [A] on a site [C] is a sheaf if for every cover f, and every compatible family [s], there exists a unique [t : A U] such that for all [i], [fmap A (f i) t = s i]. *)
+Class IsSheaf {C : Site} (A : PSh C) := {
+  issheaf {U : C} (f : Sink U) `{!IsCover f}
+    (s : CompatibleFamily A f)
+    : Contr {t : A U & forall i,
+        fmap A (f i : Hom (A:=C^op) U _) t = (s i)};
+}.
 
-  (** TODO: this can be slow, but not slow if done all at once. *)
-  (** Now there is a "canonical" map from the sieve to the presheaf represented by U *)
-  Definition sieve_map : presheaf_sieve $-> hset_yon U.
-  Proof.
-    snrapply PreSheafCoeq_rec.
-    { snrapply PreSheafCoproduct_rec.
-      intro i.
-      exact (fmap hset_yon (sink_map f i)). }
-    intros X [[i j] [x [y p]]].
-    exact p.
-  Defined.
-
-End Sieve.
-
-(** Now sheaves are preciesly those presheaves that are local with respect to the sieve map for all covers. *)
-
-Section Sheaf.
-  Context {C : Site}.
-
-  Definition presheaf_precomp {a b} := @cat_precomp (PSh C) _ _ a b.
-
-  (** A presheaf on a site C is a sheaf if precomposition with the sieve map is an equivalence. *)
-  Class IsSheaf (X : PSh C)
-    := isequiv0gpd_issheaf (U : C) (f : Sink U) `{IsCover C U f}
-      : IsEquiv0Gpd (presheaf_precomp X (sieve_map f)).
-  Global Existing Instance isequiv0gpd_issheaf.
-End Sheaf.
-
-(** We define sheaves on a site C to be presheaves which satisfy the sheaf condition. *)
 Record Sh (C : Site) := {
   sheaf_presheaf : PSh C;
   sheaf_issheaf : IsSheaf sheaf_presheaf;

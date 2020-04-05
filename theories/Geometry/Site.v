@@ -31,7 +31,6 @@ Record Coverage (C : Type) `{Is1Cat C} := {
               g $o sink_map h j $== sink_map f i $o k;
 }.
 
-(** TODO: can morphism extensionality be removed *)
 (** A site consists of a category C and a coverge on C. *)
 (** We want a site to be a coherent 1-category as later we will be doing presheaf constructions over this site. These constructions typically require homs to be hsets. *)
 Record Site := {
@@ -40,15 +39,15 @@ Record Site := {
   site_isgraph : IsGraph site_type;
   site_is01cat : Is01Cat site_type;
   site_is1cat  : Is1Cat  site_type;
-  site_hasmoreext : HasMorExt site_type;
   site_istrunc_hom : forall x y, IsHSet (x $-> y);
   site_coverage : Coverage site_type;
 }.
 
 Coercion site_type : Site >-> Sortclass.
 Global Existing Instances site_isgraph site_is01cat
-  site_is1cat site_hasmoreext site_istrunc_hom.
+  site_is1cat site_istrunc_hom.
 
-(** We give a better name for [coverage_iscover]. *)
-Definition IsCover (C : Site) (U : C) (f : Sink U)
+(** We give a better name for [coverage_iscover] and make it a class *)
+Definition IsCover {C : Site} {U : C} (f : Sink U)
   := coverage_iscover C (site_coverage C) f.
+Existing Class IsCover.

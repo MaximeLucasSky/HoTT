@@ -106,7 +106,19 @@ Class IsLocalization (R : CRing) (S : MultiplicativeSubset R) (R_S : CRing)
         & f == g o l}; (** such that f factors through l *) 
 }.
 
-(** TODO: Now we wish to show that localizations exist. *)
+Definition islocalization_rec (R : CRing) (S : MultiplicativeSubset R) (R_S : CRing)
+  (l : CRingHomomorphism R R_S) (T : CRing) {K : IsLocalization R S R_S l}
+  (f : CRingHomomorphism R T) {H : forall (s:S), IsUnit T (f (mss_incl s))}
+  : CRingHomomorphism R_S T
+  := pr1 (@center _ (isrnglocal_up T f)).
+
+Definition islocalization_rec_beta (R : CRing) (S : MultiplicativeSubset R) (R_S : CRing)
+  (l : CRingHomomorphism R R_S) (T : CRing) {K : IsLocalization R S R_S l}
+  (f : CRingHomomorphism R T) {H : forall (s:S), IsUnit T (f (mss_incl s))}
+  : islocalization_rec R S R_S l T f o l == f
+  := symmetry _ _ (pr2 (@center _ (isrnglocal_up T f))).
+
+(** Now we wish to show that localizations exist. *)
 
 Section Localization.
 
@@ -561,6 +573,5 @@ Proof.
   rewrite ?rng_mult_one_l, ?rng_mult_one_r.
   apply plus_negate_r.
 Qed.
-
 
 

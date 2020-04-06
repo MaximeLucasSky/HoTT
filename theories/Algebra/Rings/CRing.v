@@ -289,27 +289,45 @@ Proof.
   apply associativity.
 Qed.
 
-(** Given a family of elements indexed by fin we can take their sum *)
-Definition rng_indexed_sum_fin {R : CRing} {n} (a : Fin n -> R) : R.
-Proof.
-  induction n.
-  1: exact 0.
-  exact (a (inr tt) + IHn (a o inl)).
-Defined.
+Section Indexed.
+  Context `{Funext} {R : CRing}.
 
-(** More generally, given a family of elements indexed by a finite type we can take their sum *)
-Definition rng_indexed_sum `{Funext} {R : CRing} {X : Type} {F : Finite X}
-  (a : X -> R) : R.
-Proof.
-  destruct F as [n me].
-  revert me.
-  srapply merely_rec_hset.
-  { intro e.
-    exact (rng_indexed_sum_fin (a o e^-1)). }
-  unfold WeaklyConstant.
-  intros e1 e2.
-  induction n.
-  1: reflexivity.
-  simpl.
-  (** No clue how to finish this *)  
-Admitted.
+  (** Given a family of elements indexed by fin we can take their sum *)
+  Definition rng_indexed_sum_fin {n : nat} (a : Fin n -> R) : R.
+  Proof.
+    induction n.
+    1: exact 0.
+    exact (a (inr tt) + IHn (a o inl)).
+  Defined.
+
+  (** More generally, given a family of elements indexed by a finite type we can take their sum *)
+  Definition rng_indexed_sum {X : Type} {F : Finite X} (a : X -> R) : R.
+  Proof.
+    destruct F as [n me].
+    revert me.
+    srapply merely_rec_hset.
+    { intro e.
+      exact (rng_indexed_sum_fin (a o e^-1)). }
+    unfold WeaklyConstant.
+    intros e1 e2.
+    refine (_ @ ap _ _).
+    2: funext x; exact (ap a (eissect e1 _)).
+    set (a' := a o e1^-1).
+    set (e' := e1 oE e2^-1).
+    change (rng_indexed_sum_fin a' = rng_indexed_sum_fin (a' o e')).
+    clearbody a' e'; clear e1 e2 a X.
+    induction n.
+    1: reflexivity.
+    revert e'.
+    snrapply equiv_ind.
+    2: apply equiv_fin_equiv.
+    1: exact _.
+    intros [s t].
+    cbv zeta; hnf.
+    change (a' (inr tt) + rng_indexed_sum_fin (a' o inl)
+      = rng_indexed_sum_fin (fun x : Fin n.+1 => a' (equiv_fin_equiv n n (s, t) x))).
+    (** How to proceed? *)
+  Admitted.
+
+
+End Indexed.

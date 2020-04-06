@@ -278,6 +278,14 @@ Fixpoint rng_pow {R : CRing} (n : nat) : R -> R
     | n.+1%nat => r * rng_pow n r
     end.
 
+Lemma rng_homo_pow {R S : CRing} (n : nat) (r : R) (f : CRingHomomorphism R S)
+  : f (rng_pow n r) = rng_pow n (f r).
+Proof.
+  induction n.
+  1: exact (rng_homo_one _).
+  cbn; rewrite rng_homo_mult; f_ap.
+Qed.
+
 Lemma rng_pow_mult {R : CRing} (n m : nat) (a : R)
   : rng_pow (Peano.plus n m) a = rng_pow n a * rng_pow m a.
 Proof.

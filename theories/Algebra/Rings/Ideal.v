@@ -1,6 +1,7 @@
 Require Import Basics Types.
 Require Import Algebra.Rings.CRing.
 Require Import Algebra.AbGroups.
+Require Import BiInv.
 
 Local Open Scope mc_scope.
 
@@ -22,6 +23,19 @@ Record Ideal (R : CRing) := {
 Coercion ideal_subgroup : Ideal >-> Subgroup.
 Global Existing Instances ideal_isideal.
 
+Definition plus_ideal {R : CRing} {I : Ideal R} : Plus I := sg_op.
+Global Existing Instances plus_ideal.
+
+Definition zero_ideal {R : CRing} {I : Ideal R} : Zero I := mon_unit.
+Global Existing Instances zero_ideal.
+
+Definition ideal_incl {R : CRing} {I : Ideal R}
+  : GroupHomomorphism I R.
+Proof.
+  snrapply Build_GroupHomomorphism.
+  1: exact issubgroup_incl.
+  exact _.
+Defined.
 
 Global Instance issubgroup_trivial {G : Group} : IsSubgroup TrivialAbGroup G.
 Proof.
@@ -78,13 +92,239 @@ Section Examples.
   Definition ideal_unit : Ideal R
     := Build_Ideal R _ isideal_trivial_subgroup'.
 
-(** TODO: Intersection of ideals *)
+  (** TODO: Intersection of ideals *)
 
+
+  Lemma eq_hprop {P : hProp} (x y : P) : x = y.
+  Proof.
+    destruct (istrunc_trunctype_type P x y).
+    exact center.
+  Defined.
+
+  Lemma eq_hprop_1 {P : hProp} (x : P) : eq_hprop x x = 1%path.
+  Proof.
+    apply eq_hprop.
+  Defined.
+  
+End Examples.
+
+
+(** * Something about subsets and infinite intersections ****)
+
+Section Subsets.
+  
+  Class IsSubset (E F : Type) `{IsHSet F} :=
+    {
+      issubset_incl : E -> F;
+      issubset_ishset : IsHSet E;
+      isinj_issubset_incl : IsInjective issubset_incl;
+    }.
+
+  Global Existing Instance isinj_issubset_incl.
+
+  Generalizable Variable E F.
+  Context `{IsHSet E} `{IsHSet F}.
+  
+(* Subset inclusion is an embedding. *)
+  Global Instance isembedding_issubset_incl `{!IsSubset E F}
+    : IsEmbedding (@issubset_incl E F _ _).
+  Proof. 
+    apply HSet.isembedding_isinj_hset.
+    apply isinj_issubset_incl.
+  Defined.
+  
+  Definition issig_issubset G H GhSet : _ <~> IsSubset G H
+    := ltac:(issig).
+  
+(** A subset of a set E is a set F which is a subset of E. *) 
+  Class Subset (E : Type) `{IsHSet E} :=
+    {
+      subset_set :> Type;
+      subset_issubset : IsSubset subset_set E;
+    }.
+  
+  Global Existing Instance subset_issubset.
+
+End Subsets.
+
+Section Subset_HProp.
+  Context (E : Type) `{IsHSet E} (ϕ : E -> Type) `{forall x, IsHProp (ϕ x)}.
+  
+  Instance hset_subset_hprop : IsHSet { e : E | ϕ e }.
+  Proof. 
+    intros x y. eapply trunc_equiv'.
+    1: exact (equiv_path_sigma_hprop x y).
+    exact (IsHSet0 x.1 y.1).
+  Defined.
+
+  Instance issubset_subset_hprop : IsSubset { e : E | ϕ e } E.
+  Proof.
+    snrapply Build_IsSubset.
+    - exact (fun x => x.1).
+    - exact hset_subset_hprop.
+    - intros ???.
+      apply equiv_path_sigma_hprop.
+      assumption.
+  Defined.
+
+  Instance subset_subset_hprop : Subset E.
+  Proof.
+    snrapply Build_Subset.
+    1: exact { e : E | ϕ e }.
+    exact issubset_subset_hprop.
+  Defined.
+End Subset_HProp.
+
+Section Inter_Subset.
+
+  Context (E : Type) `{IsHSet E}.
+  Context {J : Type} (f : J -> Type) `{forall (j : J), IsSubset (f j) E}.
+
+  Definition type_setinter : Type :=
+    {x : E | forall j : J, exists a : f j, issubset_incl a = x}.
+  
+  Instance issubset_setinter `{Funext} : IsSubset type_setinter E.
+  Proof.
+    snrapply issubset_subset_hprop.
+    intro x.
+    apply trunc_forall.
+  Defined.
+
+  Instance subset_setinter `{Funext} : Subset E.
+  Proof.
+    snrapply Build_Subset.
+    1: exact type_setinter.
+    exact issubset_setinter.
+    Defined.
+
+End Inter_Subset.
+
+Section InterIdeal.
+
+  Instance subset_subgroup {G : Group} (H : Subgroup G) : IsSubset H G.
+  Proof.
+    unshelve econstructor.
+    - exact issubgroup_incl.
+    - exact (sg_set H).
+    - exact isinj_issubgroup_incl.
+  Defined.
+
+  
+  Local Open Scope mc_mult_scope.
+  
+  Definition groupinter `{Funext} {G : Group} {J : Type} (f : J -> Subgroup G) : Group.
+  Proof.
+    snrapply Build_Group.
+    - snrapply type_setinter.
+      + exact G.
+      + exact (sg_set G).
+      + exact J.
+      + exact f.
+      + intro j. apply subset_subgroup.
+    - intros [x Hx] [y Hy].
+      unshelve econstructor.
+      1: exact (x * y).
+      intro j. specialize (Hx j). specialize (Hy j).
+      unshelve econstructor.
+      1: exact (Hx.1 * Hy.1).
+      cbn. rewrite (preserves_sg_op (pr1 Hx) (pr1 Hy)).
+      cbn in Hx. rewrite (pr2 Hx).
+      cbn in Hy. rewrite (pr2 Hy).
+      reflexivity.
+    - unshelve econstructor.
+      1: exact mon_unit.
+      intro j.
+      unshelve econstructor.
+      1: exact mon_unit.
+      exact preserves_mon_unit.
+    - intros [x Hx].
+      unshelve econstructor.
+      1: exact (-x).
+      intro j. specialize (Hx j).
+      unshelve econstructor.
+      1: exact (- Hx.1). cbn in *.
+      rewrite (grp_homo_inv _ (pr1 Hx)).
+      rewrite (pr2 Hx).
+      reflexivity.
+    - snrapply Build_IsGroup.
+      + snrapply Build_IsMonoid.
+        * snrapply Build_IsSemiGroup.
+          -- exact (@issubset_ishset (type_setinter G f) G _ (issubset_setinter G f)).
+          -- intros [x Hx] [y Hy] [z Hz].
+             apply equiv_path_sigma_hprop. cbn.
+             rewrite (sg_ass).
+             1: reflexivity.
+             exact (monoid_semigroup G).
+        * intros [x Hx].
+          apply equiv_path_sigma_hprop. cbn.
+          rewrite  monoid_left_id.
+          1: reflexivity.
+          exact (group_monoid G).
+        * intros [x Hx].
+          apply equiv_path_sigma_hprop. cbn.
+          rewrite  monoid_right_id.
+          1: reflexivity.
+          exact (group_monoid G).
+      + intros [x Hx].
+        apply equiv_path_sigma_hprop. cbn.
+        rewrite (negate_l _). reflexivity.
+      + intros [x Hx].
+        apply equiv_path_sigma_hprop. cbn.
+        rewrite (negate_r _). reflexivity.
+  Defined.
+
+  Definition grouphomo_groupinter `{Funext} {G : Group} {J : Type} (f : J -> Subgroup G) :
+    GroupHomomorphism (groupinter f) G.
+  Proof.
+    snrapply Build_GroupHomomorphism.
+    1: exact (fun x => x.1).
+    intros x y.
+    reflexivity.
+  Defined.
+
+  Definition issubgroup_groupinter `{Funext} {G : Group} {J : Type} (f : J -> Subgroup G) :
+    IsSubgroup (groupinter f) G.
+  Proof.
+    snrapply Build_IsSubgroup.
+    1: exact (grouphomo_groupinter f).
+    exact (@isinj_issubset_incl _ _ _ (issubset_setinter _ f)).
+  Defined.
+
+  Definition subgroup_groupinter `{Funext} {G : Group} {J : Type} (f : J -> Subgroup G) :
+    Subgroup G.
+  Proof.
+    snrapply Build_Subgroup.
+    1: exact (groupinter f).
+    exact (issubgroup_groupinter f).
+  Defined.
+  
+  Definition ideal_inter `{Funext} {R : CRing} {J : Type} (f : J -> Subgroup R) `{forall j : J, IsIdeal (f j)}: Ideal R.
+  Proof.
+    snrapply Build_Ideal.
+    - exact (subgroup_groupinter f).
+    - snrapply Build_IsIdeal.
+      intros r [x Hx].
+      unshelve econstructor.
+      + unshelve econstructor.
+        1: exact (cring_mult r x).
+        intro j. specialize (Hx j). specialize (H0 j).
+        unshelve econstructor.
+        1: exact (isideal r (Hx.1)).1.
+        cbn. rewrite (isideal r Hx.1).2.
+        cbn in Hx. rewrite Hx.2.
+        reflexivity.
+      + reflexivity.
+  Defined.
+        
+End InterIdeal.
+
+                
+          
+  
 (** TODO: Sum of ideals *)
 
 (** TODO: Product of ideals *)
 
-End Examples.
 
 Definition ideal_kernel {R S : CRing} (f : CRingHomomorphism R S) : Ideal R.
 Proof.
@@ -114,8 +354,16 @@ Defined.
 (** TODO: Maximal ideals *)
 (** TODO: Principal ideal *)
 (** TODO: Prime ideals *)
+
+Class IsPrime (R : CRing) (I : Ideal R) :=
+  {
+    isprime_proper : ~ (exists x : I, ideal_incl x = 1);
+    isprime_prime : forall (a b : R), (exists (x : I) , (ideal_incl x : R) = a * b) -> ((exists (y : I), ideal_incl y = a) + (exists (z : I), ideal_incl z = b))
+    }.
+
 (** TODO: Radical ideals *)
 
 (** TODO: Minimal ideals *)
+
 (** TODO: Primary ideals *)
 

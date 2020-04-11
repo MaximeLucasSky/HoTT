@@ -108,7 +108,7 @@ Section Examples.
   
 End Examples.
 
-
+path_ishprop
 (** * Something about subsets and infinite intersections ****)
 
 Section Subsets.

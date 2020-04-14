@@ -1,5 +1,6 @@
 Require Import Basics Types.
 Require Import Algebra.Rings.CRing.
+Require Import Algebra.Rings.Localization.
 Require Import Algebra.AbGroups.
 Require Import BiInv.
 
@@ -137,14 +138,14 @@ End Subsets.
 Section Subset_HProp.
   Context (E : Type) `{IsHSet E} (ϕ : E -> Type) `{forall x, IsHProp (ϕ x)}.
   
-  Instance hset_subset_hprop : IsHSet { e : E | ϕ e }.
+  Global Instance hset_subset_hprop : IsHSet { e : E | ϕ e }.
   Proof. 
     intros x y. eapply trunc_equiv'.
     1: exact (equiv_path_sigma_hprop x y).
     exact (IsHSet0 x.1 y.1).
   Defined.
 
-  Instance issubset_subset_hprop : IsSubset { e : E | ϕ e } E.
+  Global Instance issubset_subset_hprop : IsSubset { e : E | ϕ e } E.
   Proof.
     snrapply Build_IsSubset. 
     - exact (fun x => x.1).
@@ -191,7 +192,7 @@ Section InterSubgroup.
   
   Local Open Scope mc_mult_scope.
 
-  Global Instance subset_subgroup (G : Group) (H : Subgroup G) : IsSubset H G.
+  Global Instance issubset_subgroup (G : Group) (H : Subgroup G) : IsSubset H G.
   Proof.
     snrapply Build_IsSubset.
     - exact issubgroup_incl.
@@ -356,11 +357,52 @@ Defined.
 (** TODO: Principal ideal *)
 (** TODO: Prime ideals *)
 
-Class IsPrime (R : CRing) (I : Ideal R) :=
+Class IsPrime {R : CRing} (I : Ideal R) :=
   {
-    isprime_proper : ~ (exists x : I, ideal_incl x = 1);
+    isprime_proper : forall x : I, ideal_incl x <> 1;
     isprime_prime : forall (a b : R), (exists (x : I) , (ideal_incl x : R) = a * b) -> ((exists (y : I), ideal_incl y = a) + (exists (z : I), ideal_incl z = b))
     }.
+
+Definition Complement_Subset (E : Type) `{IsHSet E} (F : Subset E) `{Funext} : Subset E.
+Proof.
+  snrapply Build_Subset.
+  - exact {x : E | forall y : F, ~(issubset_incl y) = x}.
+  - exact _. 
+Defined.
+
+Definition Complement_Subgroup (G : Group) (H : Subgroup G) `{Funext} : Subset G.
+Proof.
+  rapply Complement_Subset.
+  snrapply Build_Subset.
+  - exact H.
+  - exact _.
+Defined.
+  
+Definition MultiplicativeSubset_Complement_Prime (R : CRing) (I : Ideal R) `{IsPrime R I} `{Funext} :
+  MultiplicativeSubset R.
+Proof.
+  snrapply Build_MultiplicativeSubset.
+  - exact (Complement_Subgroup R I).
+  - exact _.
+  - intros [x Hx] [y Hy]. cbn in *.
+    exists (x * y).
+    intros z Hz.
+    destruct (isprime_prime x y).
+    + exists z.
+      exact Hz.
+    + rapply Hx.
+      exact s.2.
+    + rapply Hy.
+      exact s.2.
+  - exists 1.
+    cbn. exact isprime_proper.
+  - apply issubset_incl.
+  - exact _.
+  - split.
+    + intros x y.
+      reflexivity.
+    + reflexivity.
+Defined.
 
 (** TODO: Radical ideals *)
 
